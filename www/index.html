@@ -33,9 +33,48 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
 @keyframes glow{0%,100%{box-shadow:0 0 6px var(--p2)}50%{box-shadow:0 0 20px var(--p2)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-18px) rotate(5deg)}50%{transform:translateY(-8px) rotate(-3deg)}75%{transform:translateY(-22px) rotate(3deg)}}
+@keyframes floatSlow{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes titleGlow{0%,100%{text-shadow:0 0 20px rgba(129,140,248,.2),0 0 40px rgba(244,114,182,.1)}50%{text-shadow:0 0 30px rgba(129,140,248,.4),0 0 60px rgba(244,114,182,.2)}}
+@keyframes borderGlow{0%,100%{border-color:var(--bdr);box-shadow:0 0 0 transparent}50%{border-color:#818cf844;box-shadow:0 0 30px rgba(129,140,248,.06)}}
+@keyframes dotPulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:1}}
+@keyframes orbitSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes staggerIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 .fade-up{animation:fadeUp .35s ease both}
 .pop{animation:pop .3s cubic-bezier(.34,1.56,.64,1) both}
 .slide-up{animation:slideUp .4s cubic-bezier(.25,.46,.45,.94) both}
+.stagger-1{animation:staggerIn .5s cubic-bezier(.25,.46,.45,.94) .05s both}
+.stagger-2{animation:staggerIn .5s cubic-bezier(.25,.46,.45,.94) .15s both}
+.stagger-3{animation:staggerIn .5s cubic-bezier(.25,.46,.45,.94) .25s both}
+
+/* Home screen background */
+.home-bg{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.home-bg::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 30% 20%,rgba(129,140,248,.07) 0%,transparent 50%),radial-gradient(ellipse at 70% 80%,rgba(244,114,182,.06) 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,rgba(245,158,11,.04) 0%,transparent 40%);animation:gradientMove 12s ease-in-out infinite}
+.float-num{position:absolute;font-family:'JetBrains Mono',monospace;font-weight:800;color:rgba(129,140,248,.06);pointer-events:none;user-select:none}
+
+/* Home title */
+.home-title{font-size:clamp(36px,10vw,52px);font-weight:900;letter-spacing:-2px;animation:titleGlow 4s ease-in-out infinite}
+.home-title .dot{display:inline-block;animation:dotPulse 2s ease-in-out infinite;color:var(--acc)}
+.home-subtitle{color:var(--tx2);font-size:clamp(13px,3.5vw,16px);margin-top:8px;opacity:0;animation:fadeUp .6s ease .3s both}
+
+/* Orbit decoration around title */
+.title-wrap{position:relative;display:inline-block}
+.orbit{position:absolute;inset:-30px;border-radius:50%;border:1px dashed rgba(129,140,248,.1);animation:orbitSpin 20s linear infinite;pointer-events:none}
+.orbit::after{content:'';position:absolute;top:0;left:50%;width:6px;height:6px;border-radius:50%;background:var(--p1);transform:translate(-50%,-50%);box-shadow:0 0 8px var(--p1)}
+.orbit-2{position:absolute;inset:-50px;border-radius:50%;border:1px dashed rgba(244,114,182,.08);animation:orbitSpin 30s linear reverse infinite;pointer-events:none}
+.orbit-2::after{content:'';position:absolute;bottom:0;left:50%;width:4px;height:4px;border-radius:50%;background:var(--p2);transform:translate(-50%,50%);box-shadow:0 0 6px var(--p2)}
+
+/* Enhanced card for home */
+.card-home{animation:borderGlow 4s ease-in-out infinite;transition:transform .3s,box-shadow .3s}
+.card-home:hover{box-shadow:0 8px 40px rgba(0,0,0,.3)}
+
+/* Enhanced buttons for home */
+.btn-go:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px #818cf844}
+
+/* How to play section */
+.how-to-play{position:relative;padding:16px 20px;background:var(--s1);border:1px solid var(--bdr);border-radius:14px;margin-top:24px;max-width:440px;width:100%;opacity:0;animation:staggerIn .5s ease .4s both}
+.how-to-play::before{content:'';position:absolute;inset:-1px;border-radius:14px;padding:1px;background:linear-gradient(135deg,rgba(129,140,248,.15),transparent,rgba(244,114,182,.15));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
 
 .screen{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px;padding-top:calc(20px + var(--safe-top));padding-bottom:calc(20px + var(--safe-bottom))}
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:20px;padding:28px 24px;width:100%;max-width:440px}
@@ -47,7 +86,7 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;border-radius:14px;border:none;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s cubic-bezier(.25,.46,.45,.94);width:100%;position:relative;overflow:hidden}
 .btn:active{transform:scale(.96)}.btn:disabled{opacity:.35;cursor:default;transform:none}
-.btn-go{background:linear-gradient(135deg,var(--p1),var(--p2));color:#fff;box-shadow:0 4px 16px #818cf833}
+.btn-go{background:linear-gradient(135deg,var(--p1),var(--p2),var(--p1));background-size:200% 200%;animation:gradientMove 3s ease infinite;color:#fff;box-shadow:0 4px 16px #818cf833;transition:all .2s cubic-bezier(.25,.46,.45,.94)}
 .btn-go:active{box-shadow:0 2px 8px #818cf844}
 .btn-acc{background:var(--acc);color:#000;box-shadow:0 4px 12px #f59e0b33}
 .btn-out{background:0 0;border:2px solid var(--bdr);color:var(--tx2)}
@@ -59,7 +98,7 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
 .chips{display:flex;gap:8px}
 .chip{flex:1;padding:14px 0;border-radius:12px;font-size:20px;font-weight:800;border:2px solid var(--bdr);background:0 0;color:var(--tx2);cursor:pointer;transition:all .2s cubic-bezier(.25,.46,.45,.94);font-family:'JetBrains Mono',monospace}
 .chip:active{transform:scale(.95)}
-.chip.on{border-color:var(--acc);background:#b4530920;color:var(--acc);box-shadow:0 0 12px #f59e0b22}
+.chip.on{border-color:var(--acc);background:#b4530920;color:var(--acc);box-shadow:0 0 16px #f59e0b33;transform:scale(1.04)}
 
 .code{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:800;letter-spacing:10px;color:var(--acc);text-align:center;padding:18px;background:#b4530920;border:2px dashed #f59e0b44;border-radius:16px;cursor:pointer;user-select:all;transition:all .2s}
 .code:active{transform:scale(.97);background:#b4530930}
@@ -143,6 +182,23 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
   .badge{font-size:11px;padding:2px 7px}
   .card{padding:22px 18px}
   .code{font-size:30px;letter-spacing:8px}
+  .orbit{inset:-20px}.orbit-2{inset:-35px}
+}
+@media(max-width:340px){
+  .card{padding:18px 14px}
+  .chip{padding:12px 0;font-size:18px}
+  .btn{padding:12px 18px;font-size:14px}
+  .home-title{letter-spacing:-1px}
+}
+@media(min-width:600px){
+  .screen{padding:32px 24px;padding-top:calc(32px + var(--safe-top))}
+  .card-home{padding:36px 32px;border-radius:24px}
+  .how-to-play{padding:20px 28px;border-radius:18px}
+}
+@media(min-width:768px){
+  .screen{padding:48px 32px}
+  .card-home{max-width:480px;padding:40px 36px}
+  .how-to-play{max-width:480px}
 }
 </style>
 </head>
@@ -529,14 +585,35 @@ function render(){
 
   // HOME
   if(S.scr==='home'){
-    root.appendChild(h('div',{className:'screen'},
-      h('div',{className:'fade-up',style:{textAlign:'center',marginBottom:'32px'}},
-        h('div',{style:{fontSize:'42px',fontWeight:'900',letterSpacing:'-2px'}},
-          h('span',{style:{color:'var(--p1)'}},'NUM'),
-          h('span',{style:{color:'var(--acc)'}},'●'),
-          h('span',{style:{color:'var(--p2)'}},'DUEL')),
-        h('p',{style:{color:'var(--tx2)',fontSize:'15px',marginTop:'6px'}},'The number guessing showdown')),
-      h('div',{className:'card fade-up'},
+    // Animated background with floating numbers
+    const bg = h('div',{className:'home-bg'});
+    const floatNums = ['0','1','2','3','4','5','6','7','8','9','?'];
+    floatNums.forEach((n,i) => {
+      const size = 20 + Math.random() * 40;
+      bg.appendChild(h('div',{className:'float-num',style:{
+        fontSize:size+'px',
+        left:(5 + i * 8.5)+'%',
+        top:(10 + Math.random() * 75)+'%',
+        animation:`float ${6 + Math.random()*6}s ease-in-out ${Math.random()*4}s infinite`,
+        opacity: .03 + Math.random() * .04
+      }},n));
+    });
+    root.appendChild(bg);
+
+    root.appendChild(h('div',{className:'screen',style:{position:'relative',zIndex:'1'}},
+      // Hero section with orbiting decorations
+      h('div',{className:'stagger-1',style:{textAlign:'center',marginBottom:'32px'}},
+        h('div',{className:'title-wrap'},
+          h('div',{className:'orbit'}),
+          h('div',{className:'orbit-2'}),
+          h('div',{className:'home-title'},
+            h('span',{style:{color:'var(--p1)'}},'NUM'),
+            h('span',{className:'dot'},'●'),
+            h('span',{style:{color:'var(--p2)'}},'DUEL'))),
+        h('p',{className:'home-subtitle'},'The number guessing showdown')),
+
+      // Main card with staggered entrance
+      h('div',{className:'card card-home stagger-2'},
         h('div',{className:'label'},'Your Name'),
         h('input',{id:'name-inp',className:'inp',placeholder:'Enter your name',value:S.name,autocomplete:'off',autocorrect:'off',spellcheck:'false'}),
         h('div',{className:'label',style:{marginTop:'20px'}},'Number of Digits'),
@@ -556,9 +633,13 @@ function render(){
           h('button',{className:'btn btn-out',style:{width:'auto',flexShrink:'0'},disabled:S.loading,onClick:join},
             S.loading?'...':'Join')),
         S.err?h('div',{className:'error'},S.err):null),
-      h('div',{style:{marginTop:'24px',color:'var(--tx2)',fontSize:'13px',textAlign:'center',maxWidth:'380px',lineHeight:'1.6'}},
-        h('strong',{style:{color:'var(--tx)'}},'How to play: '),
-        'Each player picks a secret number. Take turns guessing each other\'s number. After each guess, give feedback: how many digits are correct + right position, correct but wrong position, or totally wrong. First to crack the code wins!')));
+
+      // How to play with gradient border
+      h('div',{className:'how-to-play'},
+        h('div',{style:{color:'var(--tx2)',fontSize:'13px',lineHeight:'1.7',textAlign:'center'}},
+          h('strong',{style:{color:'var(--tx)',fontSize:'14px'}},'How to play'),
+          h('br'),
+          'Each player picks a secret number. Take turns guessing each other\'s number. After each guess, give feedback: how many digits are correct + right position, correct but wrong position, or totally wrong. First to crack the code wins!'))));
     return;
   }
 
