@@ -691,9 +691,12 @@ function render(){
           h('div',{style:{fontSize:'64px',marginBottom:'16px'}},didIWin?'':''),
           h('div',{style:{fontSize:'28px',fontWeight:'800',color:didIWin?'var(--ok)':'var(--bad)'}},
             didIWin?'You Won!':'They Got It!'),
-          h('div',{style:{color:'var(--tx2)',fontSize:'15px',margin:'8px 0 28px'}},
+          h('div',{style:{color:'var(--tx2)',fontSize:'15px',margin:'8px 0 16px'}},
             didIWin?`You cracked ${o?.name}'s number in ${mG.length} guesses!`
               :`${o?.name} cracked your number in ${oG.length} guesses`),
+          h('div',{style:{margin:'0 0 28px',textAlign:'center'}},
+            h('div',{style:{fontSize:'12px',color:'var(--tx2)',marginBottom:'4px'}},`${o?.name}'s Secret Was`),
+            h('div',{style:{fontSize:'24px',fontWeight:'800',letterSpacing:'6px',color:'var(--p1)'}},o?.secret||'???')),
           h('button',{className:'btn btn-go',disabled:S.loading,onClick:e=>{e.stopPropagation();playAgain();}},S.loading?'Creating...':'Play Again'),
           h('button',{className:'btn btn-out',style:{marginTop:'8px'},onClick:e=>{e.stopPropagation();up({showWin:false});}},'View Board'))));
     }
