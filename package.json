@@ -1,0 +1,31 @@
+{
+  "name": "numduel-ios",
+  "version": "1.0.0",
+  "description": "NUM DUEL - The number guessing showdown",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'Static app - no build needed'",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open ios"
+  },
+  "keywords": [
+    "game",
+    "multiplayer",
+    "number-guessing"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.1.0",
+    "@capacitor/keyboard": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
