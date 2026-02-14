@@ -118,7 +118,18 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
 .tab:active{background:var(--s2)}
 .tab.on{color:var(--p1);border-bottom-color:var(--p1)}
 .tab.on:last-child{color:var(--p2);border-bottom-color:var(--p2)}
+.tab.tab-chat.on{color:var(--acc);border-bottom-color:var(--acc)}
 .tab .dot{position:absolute;top:8px;right:calc(50% - 40px);width:8px;height:8px;border-radius:50%;background:var(--bad);animation:pulse 1s ease infinite}
+
+.chat-list{padding:8px 16px;flex:1;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:8px}
+.chat-list::-webkit-scrollbar{display:none}
+.chat-msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.4;word-break:break-word;animation:fadeUp .25s ease both}
+.chat-msg.mine{align-self:flex-end;background:var(--p1);color:#fff;border-bottom-right-radius:4px}
+.chat-msg.theirs{align-self:flex-start;background:var(--s3);border:1px solid var(--bdr);color:var(--tx);border-bottom-left-radius:4px}
+.chat-msg .chat-meta{font-size:10px;opacity:.85;margin-top:4px}
+.chat-inrow{display:flex;gap:8px;align-items:center;padding:8px 0}
+.chat-inrow .inp{flex:1;padding:12px 14px;font-size:15px;min-height:0}
+.chat-inrow .btn{width:auto;flex-shrink:0;padding:12px 18px}
 
 .glist{padding:8px 16px;flex:1;overflow-y:auto;-ms-overflow-style:none;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .glist::-webkit-scrollbar{display:none}
@@ -164,6 +175,14 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
 
 .copied-toast{position:fixed;top:calc(20px + var(--safe-top));left:50%;transform:translateX(-50%);background:var(--ok);color:#000;padding:8px 20px;border-radius:10px;font-size:14px;font-weight:700;z-index:999;animation:fadeUp .3s ease both}
 
+@keyframes reminderCircleIn{0%{opacity:0;transform:scale(0.3)}60%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+@keyframes reminderGlow{0%,100%{box-shadow:0 0 0 0 rgba(129,140,248,.25),0 0 40px rgba(129,140,248,.12)}50%{box-shadow:0 0 0 12px rgba(129,140,248,.08),0 0 56px rgba(129,140,248,.2)}}
+@keyframes reminderFadeOut{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(0.92)}}
+.make-guess-reminder{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:250;pointer-events:none;animation:fadeUp .2s ease both}
+.make-guess-reminder .reminder-circle{width:min(200px,72vw);height:min(200px,72vw);max-width:220px;max-height:220px;border-radius:50%;background:linear-gradient(165deg,var(--s1) 0%,var(--s2) 100%);border:2px solid rgba(129,140,248,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;box-shadow:0 0 0 0 rgba(129,140,248,.2),0 0 40px rgba(129,140,248,.1),inset 0 1px 0 rgba(255,255,255,.06);animation:reminderCircleIn .45s cubic-bezier(.34,1.56,.64,1) both,reminderGlow 2s ease-in-out .3s infinite}
+.make-guess-reminder .reminder-circle .reminder-msg{font-size:15px;font-weight:800;color:var(--p1);margin:0;line-height:1.35;letter-spacing:-0.3px}
+.make-guess-reminder .reminder-circle .reminder-sub{font-size:12px;color:var(--tx2);margin-top:8px;font-weight:600;line-height:1.3}
+
 .conn-status{position:fixed;bottom:calc(8px + var(--safe-bottom));right:8px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;z-index:300;pointer-events:none}
 .conn-ok{background:#10b98133;color:var(--ok)}
 .conn-err{background:#ef444433;color:var(--bad)}
@@ -200,6 +219,15 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',system-ui,-apple
   .card-home{max-width:480px;padding:40px 36px}
   .how-to-play{max-width:480px}
 }
+.chat-reactions{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.chat-reaction{display:inline-flex;align-items:center;gap:2px;padding:2px 8px;border-radius:12px;font-size:13px;cursor:pointer;border:1px solid var(--bdr);background:var(--s2);transition:all .15s}
+.chat-reaction.mine-react{border-color:var(--p1);background:#818cf818}
+.chat-reaction:active{transform:scale(.9)}
+.react-row{display:flex;gap:2px;margin-top:4px;flex-wrap:wrap}
+.react-emoji-btn{background:none;border:none;font-size:18px;cursor:pointer;padding:3px;border-radius:8px;transition:all .15s;opacity:.7}
+.react-emoji-btn:active{transform:scale(.8);opacity:1}
+.react-toggle{background:none;border:none;cursor:pointer;font-size:12px;color:var(--tx2);margin-left:8px;opacity:.4;transition:opacity .15s;padding:0}
+.react-toggle:active{opacity:1}
 </style>
 </head>
 <body>
@@ -308,11 +336,12 @@ let S = {
   scr:'home', gid:'', join:'', name:localStorage.getItem('nd_name')||'',
   role:0, digits:4, secret:'', guess:'', tab:'my',
   revealed:false, opRev:false, fbP:0, fbN:0,
-  err:'', G:null, showWin:false, loading:false
+  err:'', G:null, showWin:false, showMakeGuessReminder:false, loading:false,
+  chatDraft:'', chatLastSeenCount:0, reactionPickerIdx:null
 };
 
 let renderQueued = false;
-const TYPING_KEYS = ['name','join','secret','guess'];
+const TYPING_KEYS = ['name','join','secret','guess','chatDraft'];
 function up(o) {
   Object.assign(S, o);
   if (o.name !== undefined) localStorage.setItem('nd_name', S.name);
@@ -326,6 +355,9 @@ function up(o) {
 
 const me = () => S.G ? (S.role===1 ? S.G.player1 : S.G.player2) : null;
 const opp = () => S.G ? (S.role===1 ? S.G.player2 : S.G.player1) : null;
+
+let guessReminderInterval = null;
+let feedbackBeepInterval = null;
 
 // ── Game Actions ──
 function getHomeInputs() {
@@ -392,10 +424,25 @@ function onGameUpdate(G) {
   if (o && S.scr==='playing') {
     const gs = o.guesses ? Object.values(o.guesses) : [];
     const last = gs[gs.length-1];
-    if (last && !last.feedback && S.tab !== 'their') { u.tab = 'their'; hapticHeavy(); }
+    if (last && !last.feedback) {
+      if (S.tab !== 'their') { u.tab = 'their'; hapticHeavy(); }
+      if (!feedbackBeepInterval) startFeedbackBeep();
+    } else { stopFeedbackBeep(); }
   }
   if (o?.revealed) u.opRev = true;
   if (G.status==='finished' && !S.showWin) { u.showWin = true; hapticHeavy(); }
+  // Chat: play inbox sound when new message from opponent and user is not on Chat tab
+  const msgs = G.messages || [];
+  const prevLen = (S.G && S.G.messages) ? S.G.messages.length : 0;
+  if (S.scr==='playing') {
+    if (S.tab === 'chat') u.chatLastSeenCount = msgs.length;
+    else if (msgs.length > (S.chatLastSeenCount || prevLen)) {
+      const lastMsg = msgs[msgs.length - 1];
+      if (lastMsg && lastMsg.from !== S.role) {
+        playChatInboxSound();
+      }
+    }
+  }
   up(u);
 }
 
@@ -430,7 +477,8 @@ async function sendGuess() {
     G.currentTurn = S.role===1 ? 2 : 1;
     await DB.write(S.gid, G);
     hapticSuccess();
-    up({G, guess:'', loading:false, err:''});
+    stopGuessReminderBeep();
+    up({G, guess:'', loading:false, err:'', showMakeGuessReminder:false});
   } catch(e) { hapticError(); up({err:'Error: '+e.message, loading:false}); }
 }
 
@@ -450,7 +498,13 @@ async function sendFb() {
     G[ok].guesses = guesses;
     await DB.write(S.gid, G);
     if (S.fbP === S.digits) hapticHeavy(); else hapticSuccess();
-    up({G, fbP:0, fbN:0, tab:'my', loading:false, showWin:G.status==='finished'});
+    const isGameOver = G.status === 'finished';
+    stopFeedbackBeep();
+    up({G, fbP:0, fbN:0, tab:'my', loading:false, showWin:isGameOver, showMakeGuessReminder: !isGameOver});
+    if (!isGameOver) {
+      playReminderBeep();
+      startGuessReminderBeep();
+    }
   } catch(e) { hapticError(); up({err:'Error: '+e.message, loading:false}); }
 }
 
@@ -468,7 +522,71 @@ async function doReveal() {
   } catch(e) { console.error(e); }
 }
 
-function restart() { DB.stop(); Object.assign(S,{scr:'home',gid:'',join:'',role:0,digits:4,secret:'',guess:'',tab:'my',revealed:false,opRev:false,fbP:0,fbN:0,err:'',G:null,showWin:false,loading:false}); render(); }
+function getMessages() {
+  if (!S.G || !S.G.messages) return [];
+  return Array.isArray(S.G.messages) ? S.G.messages : Object.values(S.G.messages);
+}
+
+async function sendChat() {
+  const text = (S.chatDraft || '').trim();
+  if (!text || !S.gid) return;
+  hapticLight();
+  up({loading:true});
+  try {
+    const G = await DB.read(S.gid);
+    G.messages = G.messages || [];
+    G.messages.push({ text, from: S.role, ts: Date.now() });
+    await DB.write(S.gid, G);
+    up({G, chatDraft:'', loading:false});
+  } catch(e) {
+    hapticError();
+    up({err:'Failed to send', loading:false});
+  }
+}
+
+const REACTION_EMOJIS = ['\u{1F44D}','\u2764\uFE0F','\u{1F602}','\u{1F62E}','\u{1F622}','\u{1F525}'];
+
+async function sendReaction(msgIdx, emoji) {
+  if (!S.gid) return;
+  hapticLight();
+  try {
+    const G = await DB.read(S.gid);
+    if (!G.messages || !G.messages[msgIdx]) return;
+    const msg = G.messages[msgIdx];
+    if (!msg.reactions) msg.reactions = {};
+    if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+    const idx = msg.reactions[emoji].indexOf(S.role);
+    if (idx >= 0) msg.reactions[emoji].splice(idx, 1);
+    else msg.reactions[emoji].push(S.role);
+    if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+    await DB.write(S.gid, G);
+    up({G, reactionPickerIdx: null});
+  } catch(e) { console.error(e); }
+}
+
+// Short inbox/message-received sound when new chat message and user not on Chat tab
+function playChatInboxSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const playTone = (freq, startTime, duration, vol) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    playTone(587.33, ctx.currentTime, 0.1, 0.15);       // D5
+    playTone(783.99, ctx.currentTime + 0.08, 0.12, 0.12); // G5 — soft double tap
+  } catch (e) { /* ignore */ }
+}
+
+function restart() { DB.stop(); stopGuessReminderBeep(); stopFeedbackBeep(); Object.assign(S,{scr:'home',gid:'',join:'',role:0,digits:4,secret:'',guess:'',tab:'my',revealed:false,opRev:false,fbP:0,fbN:0,err:'',G:null,showWin:false,showMakeGuessReminder:false,loading:false,chatDraft:'',chatLastSeenCount:0,reactionPickerIdx:null}); render(); }
 
 async function playAgain() {
   if (!S.G || !fbOk) return;
@@ -496,6 +614,50 @@ async function playAgain() {
 function toast(msg) {
   const t=document.createElement('div'); t.className='copied-toast'; t.textContent=msg;
   document.body.appendChild(t); setTimeout(()=>t.remove(),1500);
+}
+
+// iPhone-style short chime — used after giving feedback to remind user to make their guess
+function playReminderBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const playTone = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.14, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    playTone(523.25, ctx.currentTime, 0.12);       // C5
+    playTone(659.25, ctx.currentTime + 0.1, 0.14); // E5 — short two-tone chime
+  } catch (e) { /* ignore if audio not allowed */ }
+}
+
+function startGuessReminderBeep() {
+  stopGuessReminderBeep();
+  guessReminderInterval = setInterval(() => {
+    if (S.showMakeGuessReminder) playReminderBeep();
+    else stopGuessReminderBeep();
+  }, 5000);
+}
+
+function stopGuessReminderBeep() {
+  if (guessReminderInterval) { clearInterval(guessReminderInterval); guessReminderInterval = null; }
+}
+
+function startFeedbackBeep() {
+  stopFeedbackBeep();
+  playReminderBeep();
+  feedbackBeepInterval = setInterval(() => playReminderBeep(), 4000);
+}
+
+function stopFeedbackBeep() {
+  if (feedbackBeepInterval) { clearInterval(feedbackBeepInterval); feedbackBeepInterval = null; }
 }
 
 function spawnConfetti() {
@@ -716,19 +878,47 @@ function render(){
     else if(myT){sc='go';st='Your turn \u2014 make a guess!';}
     lay.appendChild(h('div',{className:`status ${sc}`},st));
 
+    const msgs = getMessages();
+    const unreadChat = msgs.length > (S.chatLastSeenCount || 0);
     const t1=h('button',{className:`tab ${S.tab==='my'?'on':''}`,onClick:()=>{hapticLight();up({tab:'my'});}},`Your Guesses (${mG.length})`);
     const t2=h('button',{className:`tab ${S.tab==='their'?'on':''}`,onClick:()=>{hapticLight();up({tab:'their'});}},`${o?.name||'Them'} (${oG.length})`);
     if(needFb) t2.appendChild(h('span',{className:'dot'}));
-    lay.appendChild(h('div',{className:'tabs'},t1,t2));
+    const t3=h('button',{className:`tab tab-chat ${S.tab==='chat'?'on':''}`,onClick:()=>{hapticLight();up({tab:'chat',chatLastSeenCount:msgs.length});}},'Chat');
+    if(unreadChat && S.tab!=='chat') t3.appendChild(h('span',{className:'dot'}));
+    lay.appendChild(h('div',{className:'tabs'},t1,t2,t3));
 
-    const list=h('div',{className:'glist'});
-    if(S.tab==='my'){
+    const list=h('div',{className:S.tab==='chat'?'chat-list':'glist'});
+    if(S.tab==='chat'){
+      if(!msgs.length) list.appendChild(h('div',{style:{textAlign:'center',padding:'32px 20px',color:'var(--tx2)',fontSize:'14px'}},'No messages yet. Say hi!'));
+      else msgs.forEach((msg, idx)=>{
+        const isMe = msg.from === S.role;
+        const name = isMe ? 'You' : (msg.from===1 ? (S.G.player1?.name||'P1') : (S.G.player2?.name||'P2'));
+        const msgEl = h('div',{className:`chat-msg ${isMe?'mine':'theirs'}`},
+          h('div',{},msg.text),
+          h('div',{className:'chat-meta'},
+            h('span',{},name),
+            h('button',{className:'react-toggle',onClick:e=>{e.stopPropagation();up({reactionPickerIdx:S.reactionPickerIdx===idx?null:idx});}},'+')
+          ));
+        const reactions = msg.reactions || {};
+        const rKeys = Object.keys(reactions).filter(k => reactions[k] && reactions[k].length > 0);
+        if (rKeys.length) {
+          msgEl.appendChild(h('div',{className:'chat-reactions'},
+            ...rKeys.map(em => h('span',{className:`chat-reaction ${reactions[em].includes(S.role)?'mine-react':''}`,
+              onClick:()=>sendReaction(idx,em)},`${em} ${reactions[em].length}`))));
+        }
+        if (S.reactionPickerIdx === idx) {
+          msgEl.appendChild(h('div',{className:'react-row'},
+            ...REACTION_EMOJIS.map(em => h('button',{className:'react-emoji-btn',onClick:()=>sendReaction(idx,em)},em))));
+        }
+        list.appendChild(msgEl);
+      });
+    } else if(S.tab==='my'){
       if(!mG.length) list.appendChild(h('div',{style:{textAlign:'center',padding:'40px 20px',color:'var(--tx2)',fontSize:'14px'}},
         `No guesses yet \u2014 you're guessing ${o?.name}'s number`));
       else mG.forEach((g,i)=>list.appendChild(gRow(g,i)));
       if(S.opRev||over) list.appendChild(h('div',{className:'rev-box'},
         h('div',{className:'rev-lbl'},`${o?.name}'s Secret Was`),h('div',{className:'my-secret'},o?.secret||'???')));
-    } else {
+    } else if(S.tab==='their'){
       if(!oG.length) list.appendChild(h('div',{style:{textAlign:'center',padding:'40px 20px',color:'var(--tx2)',fontSize:'14px'}},
         `${o?.name} hasn't guessed yet`));
       else oG.forEach((g,i)=>list.appendChild(gRow(g,i)));
@@ -737,12 +927,19 @@ function render(){
     lay.appendChild(list);
 
     if(!over){
-      if(S.tab==='my'){
+      if(S.tab==='chat'){
+        lay.appendChild(h('div',{className:'actbar'},
+          h('div',{className:'chat-inrow'},
+            h('input',{className:'inp',type:'text',placeholder:'Message...',maxLength:500,value:S.chatDraft,
+              onInput:e=>{hapticLight();up({chatDraft:e.target.value});const b=document.getElementById('chat-send-btn');if(b)b.disabled=!e.target.value.trim()||S.loading;},
+              onKeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}}),
+            h('button',{id:'chat-send-btn',className:'btn btn-acc',disabled:!S.chatDraft.trim()||S.loading,onClick:sendChat},S.loading?'...':'Send'))));
+      } else if(S.tab==='my'){
         if(myT&&!needFb){
           lay.appendChild(h('div',{className:'actbar'},
             h('div',{className:'ginrow'},
               h('input',{className:'inp dig-inp',type:'tel',maxLength:S.digits,placeholder:'\u2022'.repeat(S.digits),value:S.guess,
-                onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');if(v.length<=S.digits){hapticLight();up({guess:v});const b=document.getElementById('send-guess-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
+                onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');if(v.length<=S.digits){hapticLight();if(S.showMakeGuessReminder){stopGuessReminderBeep();up({guess:v,showMakeGuessReminder:false});}else{up({guess:v});}const b=document.getElementById('send-guess-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
                 onKeydown:e=>{if(e.key==='Enter'&&S.guess.length===S.digits)sendGuess();}}),
               h('button',{id:'send-guess-btn',className:'btn btn-acc',disabled:S.guess.length!==S.digits||S.loading,onClick:sendGuess},
                 S.loading?'...':'Go')),
@@ -782,7 +979,14 @@ function render(){
           h('button',{className:'btn btn-out',style:{marginTop:'8px'},onClick:e=>{e.stopPropagation();up({showWin:false});}},'View Board'))));
     }
 
-    const gl=root.querySelector('.glist');
+    if(S.showMakeGuessReminder){
+      root.appendChild(h('div',{className:'make-guess-reminder'},
+        h('div',{className:'reminder-circle'},
+          h('p',{className:'reminder-msg'},'Make your own guess now'),
+          h('p',{className:'reminder-sub'},'Enter your next guess to crack their number'))));
+    }
+
+    const gl=root.querySelector('.glist')||root.querySelector('.chat-list');
     if(gl)setTimeout(()=>gl.scrollTop=gl.scrollHeight,50);
     if(!over&&myT&&!needFb&&S.tab==='my'){
       const gi=root.querySelector('.actbar .dig-inp');
