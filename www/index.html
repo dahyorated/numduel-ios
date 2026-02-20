@@ -385,7 +385,7 @@ function onGameUpdate(G) {
       if (!feedbackBeepInterval) startFeedbackBeep();
     } else { stopFeedbackBeep(); }
   }
-  if (o?.revealed) u.opRev = true;
+  if (o?.revealed === true || (Array.isArray(o?.revealed) && o.revealed.length > 0)) u.opRev = true;
   if (G.status==='finished' && !S.showWin) { u.showWin = true; hapticHeavy(); }
   // Chat: play inbox sound when new message from opponent and user is not on Chat tab
   const msgs = G.messages || [];
@@ -474,10 +474,35 @@ async function doReveal() {
   try {
     const G = await DB.read(S.gid);
     const k = S.role===1 ? 'player1' : 'player2';
-    G[k].revealed = true;
+    const secret = G[k].secret || '';
+    // Get currently revealed indices (handle legacy boolean or missing)
+    let revealedArr = Array.isArray(G[k].revealed) ? [...G[k].revealed] : [];
+    // Find unrevealed indices
+    const unrevealed = [];
+    for (let i = 0; i < secret.length; i++) {
+      if (!revealedArr.includes(i)) unrevealed.push(i);
+    }
+    if (unrevealed.length === 0) return;
+    // Pick a random unrevealed index
+    const pick = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+    revealedArr.push(pick);
+    G[k].revealed = revealedArr;
     await DB.write(S.gid, G);
-    up({G, revealed:true});
+    hapticSuccess();
+    up({G, revealed: revealedArr});
   } catch(e) { console.error(e); }
+}
+
+function getRevealedSecret(player) {
+  if (!player || !player.secret) return '???';
+  const secret = player.secret;
+  const rev = player.revealed;
+  // Legacy: boolean true means fully revealed
+  if (rev === true) return secret;
+  if (Array.isArray(rev) && rev.length > 0) {
+    return secret.split('').map((ch, i) => rev.includes(i) ? ch : '\u2022').join('');
+  }
+  return null; // nothing revealed
 }
 
 function getMessages() {
@@ -864,9 +889,13 @@ function render(){
         h('div',{className:'my-secret-lbl'},'Your Secret'),
         h('div',{className:'my-secret'},m?.secret||'????')),
       h('div',{style:{display:'flex',gap:'8px',alignItems:'center'}},
-        !S.revealed
-          ?h('button',{className:'btn btn-sm btn-out',style:{width:'auto'},onClick:doReveal},'Reveal')
-          :h('span',{style:{fontSize:'12px',color:'var(--ok)',fontWeight:'700'}},'Revealed'),
+        (()=>{
+          const revArr = Array.isArray(S.revealed) ? S.revealed : (S.revealed === true ? Array.from({length:S.digits},(_,i)=>i) : []);
+          const left = S.digits - revArr.length;
+          if (left > 0) return h('button',{className:'btn btn-sm btn-out',style:{width:'auto'},onClick:doReveal},
+            revArr.length > 0 ? `Reveal (${left})` : 'Reveal');
+          return h('span',{style:{fontSize:'12px',color:'var(--ok)',fontWeight:'700'}},'All Revealed');
+        })(),
         h('button',{className:'btn btn-sm btn-out',style:{width:'auto',color:'var(--bad)',borderColor:'var(--bad)'},onClick:restart},'Exit'))));
 
     let sc='wait',st=`Waiting for ${o?.name}...`;
@@ -913,8 +942,13 @@ function render(){
       if(!mG.length) list.appendChild(h('div',{style:{textAlign:'center',padding:'40px 20px',color:'var(--tx2)',fontSize:'14px'}},
         `No guesses yet \u2014 you're guessing ${o?.name}'s number`));
       else mG.forEach((g,i)=>list.appendChild(gRow(g,i)));
-      if(S.opRev||over) list.appendChild(h('div',{className:'rev-box'},
+      if(over) list.appendChild(h('div',{className:'rev-box'},
         h('div',{className:'rev-lbl'},`${o?.name}'s Secret Was`),h('div',{className:'my-secret'},o?.secret||'???')));
+      else if(S.opRev) {
+        const partial = getRevealedSecret(o);
+        if(partial) list.appendChild(h('div',{className:'rev-box'},
+          h('div',{className:'rev-lbl'},`${o?.name} Revealed`),h('div',{className:'my-secret'},partial)));
+      }
     } else if(S.tab==='their'){
       if(!oG.length) list.appendChild(h('div',{style:{textAlign:'center',padding:'40px 20px',color:'var(--tx2)',fontSize:'14px'}},
         `${o?.name} hasn't guessed yet`));
