@@ -576,14 +576,10 @@ function toast(msg) {
 
 function shareGameCode(code) {
   hapticLight();
-  const shareText = `Join my NUM DUEL game!\n\nGame Code: ${code}\n\nPlay here: https://praizandzikky.web.app`;
   if (navigator.share) {
-    navigator.share({
-      title: 'NUM DUEL - Join My Game!',
-      text: shareText
-    }).catch(() => {});
+    navigator.share({ text: code }).catch(() => {});
   } else {
-    navigator.clipboard?.writeText(shareText).then(() => toast('Copied to clipboard!')).catch(() => {});
+    navigator.clipboard?.writeText(code).then(() => toast('Code copied!')).catch(() => {});
   }
 }
 
@@ -806,7 +802,7 @@ function render(){
           navigator.share ? 'Share Code' : 'Copy Invite'),
         h('button',{className:'btn btn-out',style:{marginTop:'8px',borderColor:'#25D366',color:'#25D366'},onClick:()=>{
           hapticLight();
-          const text = encodeURIComponent(`Join my NUM DUEL game!\n\nGame Code: ${S.gid}\n\nPlay here: https://praizandzikky.web.app`);
+          const text = encodeURIComponent(S.gid);
           window.open(`https://wa.me/?text=${text}`,'_blank');
         }},'Share via WhatsApp'),
         h('div',{style:{marginTop:'20px'}},h('div',{className:'pdot'})),
