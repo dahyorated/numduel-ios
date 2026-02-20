@@ -292,7 +292,7 @@ let S = {
   scr:'home', gid:'', join:'', name:localStorage.getItem('nd_name')||'',
   role:0, digits:4, secret:'', guess:'', tab:'my',
   revealed:false, opRev:false, fbP:0, fbN:0,
-  err:'', G:null, showWin:false, showMakeGuessReminder:false, loading:false,
+  err:'', G:null, showWin:false, confettiSpawned:false, showMakeGuessReminder:false, loading:false,
   chatDraft:'', chatLastSeenCount:0, reactionPickerIdx:null
 };
 
@@ -375,7 +375,7 @@ function onGameUpdate(G) {
   const u = {G};
   if (S.scr==='waiting' && G.player2) { u.scr = 'set_secret'; hapticMedium(); }
   if (S.scr==='waiting_secret' && G.status==='playing') { u.scr='playing'; u.tab='my'; hapticSuccess(); }
-  if ((S.scr==='playing'||S.showWin) && G.status==='setting_secrets') { u.scr='set_secret'; u.showWin=false; }
+  if ((S.scr==='playing'||S.showWin) && G.status==='setting_secrets') { u.scr='set_secret'; u.showWin=false; u.secret=''; u.guess=''; u.tab='my'; u.revealed=false; u.opRev=false; u.fbP=0; u.fbN=0; u.showMakeGuessReminder=false; stopGuessReminderBeep(); stopFeedbackBeep(); }
   const o = S.role===1 ? G.player2 : G.player1;
   if (o && S.scr==='playing') {
     const gs = o.guesses ? Object.values(o.guesses) : [];
@@ -388,8 +388,9 @@ function onGameUpdate(G) {
   if (o?.revealed === true || (Array.isArray(o?.revealed) && o.revealed.length > 0)) u.opRev = true;
   if (G.status==='finished' && !S.showWin) { u.showWin = true; hapticHeavy(); }
   // Chat: play inbox sound when new message from opponent and user is not on Chat tab
-  const msgs = G.messages || [];
-  const prevLen = (S.G && S.G.messages) ? S.G.messages.length : 0;
+  const msgs = Array.isArray(G.messages) ? G.messages : (G.messages ? Object.values(G.messages) : []);
+  const prevMsgs = S.G?.messages;
+  const prevLen = Array.isArray(prevMsgs) ? prevMsgs.length : (prevMsgs ? Object.values(prevMsgs).length : 0);
   if (S.scr==='playing') {
     if (S.tab === 'chat') u.chatLastSeenCount = msgs.length;
     else if (msgs.length > (S.chatLastSeenCount || prevLen)) {
@@ -421,6 +422,7 @@ async function lockSecret() {
 }
 
 async function sendGuess() {
+  if (S.loading) return;
   if (S.guess.length !== S.digits) { hapticError(); up({err:`Need ${S.digits} digits!`}); return; }
   hapticMedium();
   up({loading:true, err:''});
@@ -441,6 +443,7 @@ async function sendGuess() {
 }
 
 async function sendFb() {
+  if (S.loading) return;
   hapticMedium();
   up({loading:true});
   try {
@@ -470,6 +473,7 @@ function allWrong() { hapticLight(); S.fbP=0; S.fbN=0; sendFb(); }
 function allCorrect() { hapticHeavy(); S.fbP=S.digits; S.fbN=0; sendFb(); }
 
 async function doReveal() {
+  if (S.loading) return;
   hapticMedium();
   try {
     const G = await DB.read(S.gid);
@@ -569,7 +573,7 @@ function playChatInboxSound() {
   } catch (e) { /* ignore */ }
 }
 
-function restart() { DB.stop(); stopGuessReminderBeep(); stopFeedbackBeep(); Object.assign(S,{scr:'home',gid:'',join:'',role:0,digits:4,secret:'',guess:'',tab:'my',revealed:false,opRev:false,fbP:0,fbN:0,err:'',G:null,showWin:false,showMakeGuessReminder:false,loading:false,chatDraft:'',chatLastSeenCount:0,reactionPickerIdx:null}); render(); }
+function restart() { DB.stop(); stopGuessReminderBeep(); stopFeedbackBeep(); Object.assign(S,{scr:'home',gid:'',join:'',role:0,digits:4,secret:'',guess:'',tab:'my',revealed:false,opRev:false,fbP:0,fbN:0,err:'',G:null,showWin:false,confettiSpawned:false,showMakeGuessReminder:false,loading:false,chatDraft:'',chatLastSeenCount:0,reactionPickerIdx:null}); render(); }
 
 async function playAgain() {
   if (!S.G || !fbOk) return;
@@ -587,7 +591,7 @@ async function playAgain() {
     };
     await DB.write(S.gid, G);
     hapticSuccess();
-    up({G, secret:'', guess:'', tab:'my', revealed:false, opRev:false, fbP:0, fbN:0, scr:'set_secret', loading:false});
+    up({G, secret:'', guess:'', tab:'my', revealed:false, opRev:false, fbP:0, fbN:0, scr:'set_secret', loading:false, confettiSpawned:false, chatLastSeenCount:(G.messages||[]).length});
   } catch(e) {
     hapticError();
     up({err:'Failed to rematch: '+e.message, loading:false});
@@ -813,6 +817,7 @@ function render(){
           h('strong',{style:{color:'var(--tx)',fontSize:'14px'}},'How to play'),
           h('br'),
           'Each player picks a secret number. Take turns guessing each other\'s number. After each guess, give feedback: how many digits are correct + right position, correct but wrong position, or totally wrong. First to crack the code wins!'))));
+    if(tempInput&&tempInput.parentNode)tempInput.remove();
     return;
   }
 
@@ -834,6 +839,7 @@ function render(){
         h('p',{style:{color:'var(--tx2)',fontSize:'13px',marginTop:'10px'}},'Waiting for them to join...'),
         h('p',{style:{fontSize:'12px',color:'var(--tx2)',marginTop:'16px'}},`${S.digits}-digit game`),
         h('button',{className:'btn btn-out',style:{marginTop:'20px'},onClick:restart},'Cancel'))));
+    if(tempInput&&tempInput.parentNode)tempInput.remove();
     return;
   }
 
@@ -847,7 +853,7 @@ function render(){
         h('p',{style:{color:'var(--tx2)',fontSize:'14px',marginBottom:'24px'}},
           `Pick a ${S.digits}-digit number for ${o?.name||'your opponent'} to guess`),
         h('input',{className:'inp dig-inp',type:'tel',maxLength:S.digits,placeholder:'\u2022'.repeat(S.digits),value:S.secret,
-          onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');if(v.length<=S.digits){hapticLight();up({secret:v});const b=document.getElementById('lock-secret-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
+          onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');e.target.value=v;if(v.length<=S.digits){hapticLight();up({secret:v});const b=document.getElementById('lock-secret-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
           onKeydown:e=>{if(e.key==='Enter'&&S.secret.length===S.digits)lockSecret();}}),
         h('button',{id:'lock-secret-btn',className:'btn btn-go',style:{marginTop:'16px'},disabled:S.secret.length!==S.digits||S.loading,onClick:lockSecret},
           S.loading?'Locking...':'Lock In Secret'),
@@ -869,6 +875,7 @@ function render(){
         h('h2',{style:{fontSize:'20px',fontWeight:'800',marginBottom:'8px'}},'Your Secret is Locked!'),
         h('p',{style:{color:'var(--tx2)',fontSize:'14px'}},`Waiting for ${o?.name||'opponent'} to set their number...`),
         h('div',{style:{marginTop:'20px'}},h('div',{className:'pdot'})))));
+    if(tempInput&&tempInput.parentNode)tempInput.remove();
     return;
   }
 
@@ -970,12 +977,13 @@ function render(){
           lay.appendChild(h('div',{className:'actbar'},
             h('div',{className:'ginrow'},
               h('input',{id:'guess-inp',className:'inp dig-inp',type:'tel',inputMode:'numeric',maxLength:S.digits,placeholder:'\u2022'.repeat(S.digits),value:S.guess,
-                onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');if(v.length<=S.digits){hapticLight();if(S.showMakeGuessReminder){stopGuessReminderBeep();up({guess:v,showMakeGuessReminder:false});}else{up({guess:v});}const b=document.getElementById('send-guess-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
+                onInput:e=>{const v=e.target.value.replace(/[^0-9]/g,'');e.target.value=v;if(v.length<=S.digits){hapticLight();if(S.showMakeGuessReminder){stopGuessReminderBeep();up({guess:v,showMakeGuessReminder:false});}else{up({guess:v});}const b=document.getElementById('send-guess-btn');if(b)b.disabled=v.length!==S.digits||S.loading;}},
                 onKeydown:e=>{if(e.key==='Enter'&&S.guess.length===S.digits)sendGuess();},
                 onBlur:e=>{
-                  // Prevent keyboard from dismissing during gameplay
+                  // Prevent keyboard from dismissing during gameplay, but not if user tapped another element
+                  if(e.relatedTarget) return;
                   if(S.scr==='playing'&&!S.loading&&S.tab==='my'&&S.G?.currentTurn===S.role){
-                    setTimeout(()=>{const inp=document.getElementById('guess-inp');if(inp)inp.focus();},50);
+                    setTimeout(()=>{const inp=document.getElementById('guess-inp');if(inp&&S.tab==='my')inp.focus();},50);
                   }
                 }}),
               h('button',{id:'send-guess-btn',className:'btn btn-acc',disabled:S.guess.length!==S.digits||S.loading,onClick:e=>{e.preventDefault();sendGuess();}},
@@ -1000,7 +1008,7 @@ function render(){
 
     // Winner overlay
     if(S.showWin){
-      if(didIWin) spawnConfetti();
+      if(didIWin&&!S.confettiSpawned) { spawnConfetti(); S.confettiSpawned=true; }
       root.appendChild(h('div',{className:'overlay',onClick:()=>up({showWin:false})},
         h('div',{className:'card wcard pop'},
           h('div',{style:{fontSize:'64px',marginBottom:'16px'}},didIWin?'':''),
