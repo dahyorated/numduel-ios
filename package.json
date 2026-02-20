@@ -6,9 +6,7 @@
   "scripts": {
     "build": "echo 'Static app - no build needed'",
     "test": "node test-new-features.js",
-    "serve": "npx serve www -p 8080",
-    "cap:sync": "npx cap sync",
-    "cap:open": "npx cap open ios"
+    "serve": "npx serve www -p 8080"
   },
   "keywords": [
     "game",
@@ -18,16 +16,6 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "dependencies": {
-    "@capacitor/cli": "^8.1.0",
-    "@capacitor/core": "^8.1.0",
-    "@capacitor/haptics": "^8.0.0",
-    "@capacitor/ios": "^8.1.0",
-    "@capacitor/keyboard": "^8.0.0",
-    "@capacitor/splash-screen": "^8.0.0",
-    "@capacitor/status-bar": "^8.0.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.3"
-  }
+  "dependencies": {},
+  "devDependencies": {}
 }
